@@ -22,7 +22,7 @@
         android:theme="@style/Theme.FaceTrackingGame"
         tools:targetApi="31">
 
-        <!-- Define MainActivity as the Launcher Activity -->
+        <!-- Define MainMenuActivity as the Launcher Activity -->
         <activity android:name=".MainMenuActivity"
             android:exported="true">
             <intent-filter>
@@ -30,7 +30,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Other Game Activities -->
         <activity android:name=".MainActivity"/>
+        <activity android:name=".ScoreboardActivity"/>
+
     </application>
 
 </manifest>
