@@ -38,7 +38,7 @@ class FaceAnalyzer : ImageAnalysis.Analyzer {
 
                     println("Face Detected: HeadX = $headX, HeadY = $headY, Box: $boundingBox")
 
-                    GameController.updateCharacterMovement(headX, headY, boundingBox)
+                    GameController.updateCharacterMovement(headX, headY)
                 }
             }
             .addOnCompleteListener {

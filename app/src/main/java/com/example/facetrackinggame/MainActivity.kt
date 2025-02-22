@@ -12,6 +12,13 @@ import androidx.camera.core.*
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 
+import android.os.Handler
+import android.os.Looper
+
+import android.graphics.Point
+import android.view.WindowManager
+
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewFinder: PreviewView
@@ -23,13 +30,27 @@ class MainActivity : ComponentActivity() {
         // ✅ Set the correct layout (with both views)
         setContentView(R.layout.activity_main)
 
+        getScreenSize() // ✅ Get actual screen size dynamically
+
         // ✅ Initialize both views
         viewFinder = findViewById(R.id.viewFinder)
         gameView = findViewById(R.id.gameView)
 
         GameController.gameView = gameView
 
+        // ✅ Start the obstacle update loop
+        startObstacleLoop()
+
         checkCameraPermission()
+    }
+
+    private fun getScreenSize() {
+        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        val display = wm.defaultDisplay
+        val size = Point()
+        display.getSize(size)
+
+        GameController.setScreenSize(size.x.toFloat(), size.y.toFloat())
     }
 
     private fun checkCameraPermission() {
@@ -66,5 +87,19 @@ class MainActivity : ComponentActivity() {
                 }
             cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis)
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    // ✅ Added function to continuously update falling obstacles
+    private fun startObstacleLoop() {
+        val handler = Handler(Looper.getMainLooper())
+        val obstacleRunnable = object : Runnable {
+            override fun run() {
+                if (!GameController.isGameOver) { // ✅ Stop updating when game over
+                    GameController.updateObstacles()
+                }
+                handler.postDelayed(this, 50) // ✅ Run every 50ms
+            }
+        }
+        handler.post(obstacleRunnable)
     }
 }

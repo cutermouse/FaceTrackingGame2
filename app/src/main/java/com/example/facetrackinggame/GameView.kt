@@ -7,24 +7,33 @@ import android.view.SurfaceView
 import android.view.View
 
 class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, attrs), Runnable {
-    private val thread = Thread(this)
     private val paint = Paint()
-    private val facePaint = Paint().apply {
-        color = Color.RED
-        style = Paint.Style.STROKE
-        strokeWidth = 5f
+    private val textPaint = Paint().apply {
+        color = Color.WHITE
+        textSize = 100f
+        typeface = Typeface.DEFAULT_BOLD
     }
 
     init {
-        setWillNotDraw(false) // ✅ Ensure the view can draw itself
-        visibility = View.VISIBLE // ✅ Make sure GameView is visible
+        setWillNotDraw(false)
+        visibility = View.VISIBLE
+        background = null // ✅ Ensure background is transparent
+
+        setOnClickListener {
+            if (GameController.isGameOver) {
+                GameController.resetGame() // ✅ Restart when tapping after game over
+            }
+        }
     }
 
     override fun run() {
         while (true) {
             val canvas = holder.lockCanvas() ?: continue
-            drawGame(canvas)
-            holder.unlockCanvasAndPost(canvas)
+            try {
+                drawGame(canvas)
+            } finally {
+                holder.unlockCanvasAndPost(canvas)
+            }
         }
     }
 
@@ -34,18 +43,23 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
     }
 
     private fun drawGame(canvas: Canvas) {
-        canvas.drawColor(Color.TRANSPARENT) // ✅ Make background transparent
+        // ✅ Do not clear the entire canvas to avoid hiding the camera
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+
+        // Draw player
         paint.color = Color.BLUE
-
-        // ✅ Ensure the character moves
-        println("Drawing Character at X=${GameController.characterX}, Y=${GameController.characterY}")
-
-        // ✅ Draw the blue circle at the updated position
         canvas.drawCircle(GameController.characterX, GameController.characterY, 50f, paint)
+
+        // Draw obstacles
+        GameController.drawObstacles(canvas)
+
+        // ✅ Show "Game Over" text
+        if (GameController.isGameOver) {
+            canvas.drawText("Game Over", width / 2f - 200, height / 2f, textPaint)
+        }
     }
 
-    // ✅ Add a function to refresh the GameView
     fun updateView() {
-        invalidate()  // ✅ Forces a redraw
+        postInvalidate()
     }
 }
