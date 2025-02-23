@@ -5,14 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import com.example.facetrackinggame.Score
-import com.example.facetrackinggame.ScoreDatabase
 import kotlinx.coroutines.launch
 
 class ScoreboardActivity : ComponentActivity() {
@@ -32,7 +30,7 @@ fun ScoreboardScreen() {
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            scores.value = db.scoreDao().getTopScores()
+            scores.value = db.scoreDao().getTopScores().sortedByDescending { it.value } // ✅ Sort scores highest first
         }
     }
 
@@ -41,16 +39,21 @@ fun ScoreboardScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn {
-            items(scores.value) { score ->
-                ScoreRow(score.playerName, score.value)
+            itemsIndexed(scores.value) { index, score -> // ✅ Use `itemsIndexed` to get the rank number
+                ScoreRow(index + 1, score.playerName, score.value)
             }
         }
     }
 }
 
 @Composable
-fun ScoreRow(playerName: String, score: Int) {
-    Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-        Text("$playerName: $score", style = MaterialTheme.typography.bodyLarge)
+fun ScoreRow(rank: Int, playerName: String, score: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("$rank.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(end = 8.dp)) // ✅ Rank on the left
+        Text(playerName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text("$score", style = MaterialTheme.typography.bodyLarge)
     }
 }
