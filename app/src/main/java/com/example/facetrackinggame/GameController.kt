@@ -1,19 +1,27 @@
 package com.example.facetrackinggame
 
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Handler
 import android.os.Looper
 import kotlin.random.Random
 
-object GameController {
+object GameController : SensorEventListener {
     var characterX = 500f
     var characterY = 1200f
     private const val playerRadius = 50f
     var gameView: GameView? = null
+    var playerSpeed = 10f // ✅ Initial player speed
+    private val normalSpeed = 10f // ✅ Default speed, used for resetting
 
     private val obstacles = mutableListOf<Obstacle>()
+    private val powerUpTimers = mutableMapOf<Obstacle.ShapeType, Long>() // Store the time for active power-ups
 
     private var screenWidth = 1080f
     private var screenHeight = 1920f
@@ -22,7 +30,11 @@ object GameController {
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private var frameCount = 0 // Frame counter for spawning obstacles
-    var score = 0 // ✅ Added score variable
+    var score = 0 // ✅ Score variable
+    var useAccelerometer = false // ✅ Toggle between face tracking & accelerometer
+
+    private var sensorManager: SensorManager? = null
+    private var accelerometer: Sensor? = null
 
     // ✅ Function to set screen size dynamically
     fun setScreenSize(width: Float, height: Float) {
@@ -30,8 +42,32 @@ object GameController {
         screenHeight = height
     }
 
+    // ✅ Initialize sensors (Call this in Activity)
+    fun initializeSensors(context: Context) {
+        sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            if (useAccelerometer) {
+                updateCharacterWithAccelerometer(event.values[0], event.values[1])
+            }
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    // ✅ Function to toggle movement method
+    private fun toggleMovementMethod() {
+        useAccelerometer = score / 300 % 2 == 1 // Switch every 200 points
+    }
+
+    // ✅ Face Tracking Movement
     fun updateCharacterMovement(headX: Float, headY: Float) {
         if (isGameOver) return
+        if (useAccelerometer) return // Skip if accelerometer is active
 
         val movementSpeed = 20f
 
@@ -46,12 +82,39 @@ object GameController {
         updateGameView()
     }
 
+    // ✅ Accelerometer Movement
+    private fun updateCharacterWithAccelerometer(accelX: Float, accelY: Float) {
+        if (isGameOver) return
+
+        val sensitivity = 5f // Adjust movement speed
+        characterX -= accelX * sensitivity
+        characterY += accelY * sensitivity
+
+        characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
+        characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
+
+        updateGameView()
+    }
+
+    private fun handlePowerUps() {
+        val currentTime = System.currentTimeMillis()
+
+        // Handle Speed Up power-up expiration
+        if (powerUpTimers[Obstacle.ShapeType.SPEED_UP]?.let { currentTime - it > 5000 } == true) {
+            // Reset speed to normal
+            playerSpeed = normalSpeed
+            powerUpTimers.remove(Obstacle.ShapeType.SPEED_UP)
+        }
+    }
+
     fun updateObstacles() {
         if (isGameOver) return
 
         frameCount++
         score++ // ✅ Increase score over time
+        toggleMovementMethod() // ✅ Check if movement should toggle
 
+        // Create new obstacles
         if (frameCount % 50 == 0) {
             val obstacleCount = Random.nextInt(2, 5)
             repeat(obstacleCount) {
@@ -65,19 +128,32 @@ object GameController {
             obstacle.update()
 
             if (obstacle.checkCollision(characterX, characterY, playerRadius)) {
-                println("💥 Collision detected! Game Over")
-                isGameOver = true
-                updateGameView()
-                return
+                // Handle power-up effects
+                when (obstacle.powerUpType) {
+                    Obstacle.ShapeType.SPEED_UP -> {
+                        // Increase player speed temporarily
+                        playerSpeed *= 2.0f
+                        powerUpTimers[Obstacle.ShapeType.SPEED_UP] = System.currentTimeMillis()
+                    }
+                    else -> {
+                        isGameOver = true
+                    }
+                }
+                iterator.remove()
             }
 
+            // Remove obstacle if it goes off-screen
             if (obstacle.isOutOfScreen(screenHeight.toInt())) {
                 iterator.remove()
             }
         }
 
+        // Handle power-up expiration
+        handlePowerUps()
+
         updateGameView()
     }
+
 
     fun drawObstacles(canvas: Canvas) {
         obstacles.forEach { it.draw(canvas) }
@@ -110,7 +186,6 @@ object GameController {
         obstacles.clear()
         frameCount = 0
         score = 0 // ✅ Reset score on restart
-        println("Game Restarted!")
         updateGameView()
     }
 }

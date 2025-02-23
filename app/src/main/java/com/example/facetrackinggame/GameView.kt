@@ -59,13 +59,30 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
         // Draw obstacles
         GameController.drawObstacles(canvas)
 
-        GameController.drawScore(canvas, scorePaint) // ✅ Draw score using Canvas
+        // Draw score using Canvas
+        GameController.drawScore(canvas, scorePaint)
 
-        // ✅ Show "Game Over" text
+        // ✅ Show "Game Over" text if game is over
         if (GameController.isGameOver) {
             canvas.drawText("Game Over", width / 2f - 200, height / 2f, textPaint)
         }
+
+        // ✅ Draw the title based on movement mode
+        val title = if (GameController.useAccelerometer) {
+            "Tilt your phone!!"
+        } else {
+            "Face Tracking!!"
+        }
+
+        // Set the text size and color for the title
+        val titleWidth = textPaint.measureText(title)
+        val titleX = (width - titleWidth) / 2f // Center the title horizontally
+        val titleY = height / 5f // Position it a bit near the top of the screen
+
+        // Draw the title
+        canvas.drawText(title, titleX, titleY, textPaint)
     }
+
 
     fun updateView() {
         postInvalidate()

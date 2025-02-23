@@ -39,6 +39,8 @@ class MainActivity : ComponentActivity() {
     private var viewFinder: PreviewView? = null  // ✅ Nullable to prevent crash
     private lateinit var gameView: GameView
     private var isGameOverHandled = false
+    private var obstacleRunnable: Runnable? = null // Track the runnable
+    private val handler = Handler(Looper.getMainLooper()) // Move handler to class level
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +53,9 @@ class MainActivity : ComponentActivity() {
         gameView = findViewById(R.id.gameView)
         GameController.gameView = gameView
         startObstacleLoop()
+
+        GameController.initializeSensors(this)  // ✅ Initialize the accelerometer
+
         checkCameraPermission()
     }
 
@@ -60,6 +65,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun restartGame() {
+        obstacleRunnable?.let { handler.removeCallbacks(it) }
         val intent = Intent(this, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK) // ✅ Clears previous activities
         startActivity(intent)
@@ -132,8 +138,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startObstacleLoop() {
-        val handler = Handler(Looper.getMainLooper())
-        val obstacleRunnable = object : Runnable {
+        obstacleRunnable = object : Runnable {
             override fun run() {
                 if (!GameController.isGameOver) {
                     GameController.updateObstacles()
@@ -144,7 +149,7 @@ class MainActivity : ComponentActivity() {
                 handler.postDelayed(this, 50)
             }
         }
-        handler.post(obstacleRunnable)
+        obstacleRunnable?.let { handler.post(it) }
     }
 }
 

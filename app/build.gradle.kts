@@ -77,7 +77,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.material.icons.extended)
 
-
     // Debugging Tools (Already present)
     debugImplementation(libs.androidx.ui.tooling)
 }
