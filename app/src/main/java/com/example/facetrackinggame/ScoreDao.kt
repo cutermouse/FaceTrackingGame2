@@ -9,6 +9,6 @@ interface ScoreDao {
     @Insert
     suspend fun insertScore(score: Score)
 
-    @Query("SELECT * FROM scores ORDER BY value DESC LIMIT 10")
+    @Query("SELECT * FROM scores ORDER BY value DESC LIMIT 100")
     suspend fun getTopScores(): List<Score>
 }
