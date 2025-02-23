@@ -42,6 +42,12 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
         drawGame(canvas)
     }
 
+    private val scorePaint = Paint().apply {
+        color = Color.BLACK
+        textSize = 80f
+        isAntiAlias = true
+    }
+
     private fun drawGame(canvas: Canvas) {
         // ✅ Do not clear the entire canvas to avoid hiding the camera
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
@@ -52,6 +58,8 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
 
         // Draw obstacles
         GameController.drawObstacles(canvas)
+
+        GameController.drawScore(canvas, scorePaint) // ✅ Draw score using Canvas
 
         // ✅ Show "Game Over" text
         if (GameController.isGameOver) {

@@ -1,6 +1,8 @@
 package com.example.facetrackinggame
 
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Handler
 import android.os.Looper
 import kotlin.random.Random
@@ -13,7 +15,6 @@ object GameController {
 
     private val obstacles = mutableListOf<Obstacle>()
 
-    // ✅ Screen size will be set dynamically
     private var screenWidth = 1080f
     private var screenHeight = 1920f
 
@@ -21,6 +22,7 @@ object GameController {
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private var frameCount = 0 // Frame counter for spawning obstacles
+    var score = 0 // ✅ Added score variable
 
     // ✅ Function to set screen size dynamically
     fun setScreenSize(width: Float, height: Float) {
@@ -31,14 +33,13 @@ object GameController {
     fun updateCharacterMovement(headX: Float, headY: Float) {
         if (isGameOver) return
 
-        val movementSpeed = 20f // ✅ Faster movement
+        val movementSpeed = 20f
 
-        if (headY > 10) characterX -= movementSpeed // Look right → Move left
-        if (headY < -10) characterX += movementSpeed // Look left → Move right
-        if (headX > 10) characterY -= movementSpeed // Look up → Move up
-        if (headX < -10) characterY += movementSpeed // Look down → Move down
+        if (headY > 10) characterX -= movementSpeed
+        if (headY < -10) characterX += movementSpeed
+        if (headX > 10) characterY -= movementSpeed
+        if (headX < -10) characterY += movementSpeed
 
-        // ✅ Prevent character from going off-screen
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
         characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
 
@@ -49,10 +50,10 @@ object GameController {
         if (isGameOver) return
 
         frameCount++
+        score++ // ✅ Increase score over time
 
-        // ✅ Spawn multiple obstacles at once (2 to 4 every 50 frames)
         if (frameCount % 50 == 0) {
-            val obstacleCount = Random.nextInt(2, 5) // ✅ Randomly spawn 2 to 4 obstacles at once
+            val obstacleCount = Random.nextInt(2, 5)
             repeat(obstacleCount) {
                 obstacles.add(Obstacle(screenWidth.toInt()))
             }
@@ -61,10 +62,6 @@ object GameController {
         val iterator = obstacles.iterator()
         while (iterator.hasNext()) {
             val obstacle = iterator.next()
-
-            // ✅ Increase falling speed over time
-            obstacle.speed += 0.05f
-
             obstacle.update()
 
             if (obstacle.checkCollision(characterX, characterY, playerRadius)) {
@@ -82,9 +79,24 @@ object GameController {
         updateGameView()
     }
 
-
     fun drawObstacles(canvas: Canvas) {
         obstacles.forEach { it.draw(canvas) }
+    }
+
+    fun drawScore(canvas: Canvas, scorePaint: Paint) {
+        val paint = Paint().apply {
+            color = Color.BLACK
+            textSize = 80f
+            textAlign = Paint.Align.LEFT
+            isAntiAlias = true
+        }
+
+        val text = "Score: $score"
+        val textWidth = paint.measureText(text)  // ✅ Ensure paint is initialized first
+        val textX = (screenWidth - textWidth) / 2  // ✅ Center horizontally
+        val textY = screenHeight / 10  // ✅ Position near the top
+
+        canvas.drawText(text, textX, textY, paint)
     }
 
     private fun updateGameView() {
@@ -93,10 +105,11 @@ object GameController {
 
     fun resetGame() {
         isGameOver = false
-        characterX = screenWidth / 2 // ✅ Center character based on real width
-        characterY = screenHeight - 300 // ✅ Adjust position based on real height
+        characterX = screenWidth / 2
+        characterY = screenHeight - 300
         obstacles.clear()
         frameCount = 0
+        score = 0 // ✅ Reset score on restart
         println("Game Restarted!")
         updateGameView()
     }
