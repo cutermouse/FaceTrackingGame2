@@ -17,11 +17,11 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
     init {
         setWillNotDraw(false)
         visibility = View.VISIBLE
-        background = null // ✅ Ensure background is transparent
+        background = null
 
         setOnClickListener {
             if (GameController.isGameOver) {
-                GameController.resetGame() // ✅ Restart when tapping after game over
+                GameController.resetGame()
             }
         }
     }
@@ -42,47 +42,42 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
         drawGame(canvas)
     }
 
-    private val scorePaint = Paint().apply {
-        color = Color.BLACK
-        textSize = 80f
-        isAntiAlias = true
-    }
-
     private fun drawGame(canvas: Canvas) {
-        // ✅ Do not clear the entire canvas to avoid hiding the camera
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
-        // Draw player
         paint.color = Color.BLUE
         canvas.drawCircle(GameController.characterX, GameController.characterY, 50f, paint)
 
-        // Draw obstacles
         GameController.drawObstacles(canvas)
+        GameController.drawScore(canvas, textPaint)
 
-        // Draw score using Canvas
-        GameController.drawScore(canvas, scorePaint)
-
-        // ✅ Show "Game Over" text if game is over
         if (GameController.isGameOver) {
             canvas.drawText("Game Over", width / 2f - 200, height / 2f, textPaint)
         }
 
-        // ✅ Draw the title based on movement mode
-        val title = if (GameController.useAccelerometer) {
-            "Tilt your phone!!"
+        // ✅ Draw countdown if active
+        if (GameController.countdown > 0) {
+            val countdownText = GameController.countdown.toString()
+            val countdownPaint = Paint(textPaint).apply {
+                textSize = 200f  // Increased text size
+                color = Color.RED  // Optional: Make it more visible
+            }
+            val textWidth = countdownPaint.measureText(countdownText)
+            val textX = (width - textWidth) / 2f
+            val textY = height / 2f
+            canvas.drawText(countdownText, textX, textY, countdownPaint)
         } else {
-            "Face Tracking!!"
+            val title = if (GameController.useAccelerometer) {
+                "Tilt your phone!!"
+            } else {
+                "Face Tracking!!"
+            }
+            val titleWidth = textPaint.measureText(title)
+            val titleX = (width - titleWidth) / 2f
+            val titleY = height / 5f
+            canvas.drawText(title, titleX, titleY, textPaint)
         }
-
-        // Set the text size and color for the title
-        val titleWidth = textPaint.measureText(title)
-        val titleX = (width - titleWidth) / 2f // Center the title horizontally
-        val titleY = height / 5f // Position it a bit near the top of the screen
-
-        // Draw the title
-        canvas.drawText(title, titleX, titleY, textPaint)
     }
-
 
     fun updateView() {
         postInvalidate()

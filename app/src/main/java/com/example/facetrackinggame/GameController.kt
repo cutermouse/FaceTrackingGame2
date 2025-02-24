@@ -36,6 +36,8 @@ object GameController : SensorEventListener {
     private var sensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
 
+    var countdown = -1
+
     // ✅ Function to set screen size dynamically
     fun setScreenSize(width: Float, height: Float) {
         screenWidth = width
@@ -59,9 +61,33 @@ object GameController : SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
+    private fun startCountdown() {
+        countdown = 4 // Start at 4 seconds
+        val countdownHandler = Handler(Looper.getMainLooper())
+
+        fun updateCountdown() {
+            if (countdown > 0) {
+                countdown-- // Reduce countdown
+                gameView?.updateView() // Update UI
+                countdownHandler.postDelayed({ updateCountdown() }, 1000)
+            } else {
+                useAccelerometer = !useAccelerometer
+                gameView?.updateView()
+
+                // Schedule next toggle after 6 seconds (adjust timing if needed)
+                countdownHandler.postDelayed({ startCountdown() }, 6000)
+            }
+        }
+
+        updateCountdown() // Start countdown loop
+    }
+
     // ✅ Function to toggle movement method
-    private fun toggleMovementMethod() {
-        useAccelerometer = score / 300 % 2 == 1 // Switch every 200 points
+    private fun toggleMovementMethod()
+    {
+        if (score % 200 == 0 && score > 0 && countdown == -1) { //start swapping movement when score reach 200
+            startCountdown()
+        }
     }
 
     // ✅ Face Tracking Movement
@@ -186,6 +212,7 @@ object GameController : SensorEventListener {
         obstacles.clear()
         frameCount = 0
         score = 0 // ✅ Reset score on restart
+        useAccelerometer = false
         updateGameView()
     }
 }
