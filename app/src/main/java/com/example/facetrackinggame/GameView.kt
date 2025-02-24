@@ -14,6 +14,12 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
         typeface = Typeface.DEFAULT_BOLD
     }
 
+    // Load your character image (replace R.drawable.character with your actual resource)
+    private val originalCharacterBitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.character)
+
+    // Desired size for the character image (e.g., 50f)
+    private val scaledCharacterBitmap: Bitmap = Bitmap.createScaledBitmap(originalCharacterBitmap, 100, 100, false)
+
     init {
         setWillNotDraw(false)
         visibility = View.VISIBLE
@@ -45,8 +51,10 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
     private fun drawGame(canvas: Canvas) {
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
-        paint.color = Color.BLUE
-        canvas.drawCircle(GameController.characterX, GameController.characterY, 50f, paint)
+        // Draw the character using the scaled image (centered at GameController.characterX, GameController.characterY)
+        val characterLeft = GameController.characterX - scaledCharacterBitmap.width / 2f
+        val characterTop = GameController.characterY - scaledCharacterBitmap.height / 2f
+        canvas.drawBitmap(scaledCharacterBitmap, characterLeft, characterTop, paint)
 
         GameController.drawObstacles(canvas)
         GameController.drawScore(canvas, textPaint)
@@ -83,3 +91,5 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
         postInvalidate()
     }
 }
+
+

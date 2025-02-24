@@ -37,6 +37,9 @@ object GameController : SensorEventListener {
     private var accelerometer: Sensor? = null
 
     var countdown = -1
+    private var baselineAccelX = 0f
+    private var baselineAccelY = 0f
+    private var calibrated = false // Ensure we only calibrate once per switch
 
     // ✅ Function to set screen size dynamically
     fun setScreenSize(width: Float, height: Float) {
@@ -83,10 +86,10 @@ object GameController : SensorEventListener {
     }
 
     // ✅ Function to toggle movement method
-    private fun toggleMovementMethod()
-    {
-        if (score % 200 == 0 && score > 0 && countdown == -1) { //start swapping movement when score reach 200
+    private fun toggleMovementMethod() {
+        if (score % 200 == 0 && score > 0 && countdown == -1) {
             startCountdown()
+            calibrated = false // Reset calibration for new movement mode
         }
     }
 
@@ -95,12 +98,11 @@ object GameController : SensorEventListener {
         if (isGameOver) return
         if (useAccelerometer) return // Skip if accelerometer is active
 
-        val movementSpeed = 20f
 
-        if (headY > 10) characterX -= movementSpeed
-        if (headY < -10) characterX += movementSpeed
-        if (headX > 10) characterY -= movementSpeed
-        if (headX < -10) characterY += movementSpeed
+        if (headY > 10) characterX -= playerSpeed
+        if (headY < -10) characterX += playerSpeed
+        if (headX > 10) characterY -= playerSpeed
+        if (headX < -10) characterY += playerSpeed
 
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
         characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
@@ -112,15 +114,26 @@ object GameController : SensorEventListener {
     private fun updateCharacterWithAccelerometer(accelX: Float, accelY: Float) {
         if (isGameOver) return
 
-        val sensitivity = 5f // Adjust movement speed
-        characterX -= accelX * sensitivity
-        characterY += accelY * sensitivity
+        // Calibrate baseline only once when switching to accelerometer mode
+        if (!calibrated) {
+            baselineAccelX = accelX
+            baselineAccelY = accelY
+            calibrated = true
+        }
+
+        // Adjust movement using baseline (neutral starting position)
+        val adjustedAccelX = accelX - baselineAccelX
+        val adjustedAccelY = accelY - baselineAccelY
+
+        characterX -= adjustedAccelX * playerSpeed
+        characterY += adjustedAccelY * playerSpeed
 
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
         characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
 
         updateGameView()
     }
+
 
     private fun handlePowerUps() {
         val currentTime = System.currentTimeMillis()
@@ -144,7 +157,7 @@ object GameController : SensorEventListener {
         if (frameCount % 50 == 0) {
             val obstacleCount = Random.nextInt(2, 5)
             repeat(obstacleCount) {
-                obstacles.add(Obstacle(screenWidth.toInt()))
+                obstacles.add(Obstacle(gameView?.context ?: return, screenWidth.toInt()))
             }
         }
 
@@ -155,10 +168,10 @@ object GameController : SensorEventListener {
 
             if (obstacle.checkCollision(characterX, characterY, playerRadius)) {
                 // Handle power-up effects
-                when (obstacle.powerUpType) {
+                when (obstacle.shape) {
                     Obstacle.ShapeType.SPEED_UP -> {
                         // Increase player speed temporarily
-                        playerSpeed *= 2.0f
+                        playerSpeed *= 1.5f
                         powerUpTimers[Obstacle.ShapeType.SPEED_UP] = System.currentTimeMillis()
                     }
                     else -> {
@@ -213,6 +226,7 @@ object GameController : SensorEventListener {
         frameCount = 0
         score = 0 // ✅ Reset score on restart
         useAccelerometer = false
+        playerSpeed = normalSpeed
         updateGameView()
     }
 }
