@@ -41,6 +41,10 @@ object GameController : SensorEventListener {
     private var baselineAccelY = 0f
     private var calibrated = false // Ensure we only calibrate once per switch
 
+    private var smoothedHeadX = 0f
+    private var smoothedHeadY = 0f
+    private val smoothingFactor = 0.1f // Change this value to control the smoothness (lower = smoother)
+
     // ✅ Function to set screen size dynamically
     fun setScreenSize(width: Float, height: Float) {
         screenWidth = width
@@ -98,11 +102,15 @@ object GameController : SensorEventListener {
         if (isGameOver) return
         if (useAccelerometer) return // Skip if accelerometer is active
 
+        // Apply exponential smoothing for face tracking
+        smoothedHeadX = smoothedHeadX * (1 - smoothingFactor) + headX * smoothingFactor
+        smoothedHeadY = smoothedHeadY * (1 - smoothingFactor) + headY * smoothingFactor
 
-        if (headY > 10) characterX -= playerSpeed
-        if (headY < -10) characterX += playerSpeed
-        if (headX > 10) characterY -= playerSpeed
-        if (headX < -10) characterY += playerSpeed
+        // Move character based on smoothed head position
+        if (smoothedHeadY > 10) characterX -= playerSpeed
+        if (smoothedHeadY < -10) characterX += playerSpeed
+        if (smoothedHeadX > 10) characterY -= playerSpeed
+        if (smoothedHeadX < -10) characterY += playerSpeed
 
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
         characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
@@ -125,15 +133,16 @@ object GameController : SensorEventListener {
         val adjustedAccelX = accelX - baselineAccelX
         val adjustedAccelY = accelY - baselineAccelY
 
-        characterX -= adjustedAccelX * playerSpeed
+        // Invert X and Y axes if needed (depending on your device orientation)
+        characterX -= adjustedAccelX * playerSpeed 
         characterY += adjustedAccelY * playerSpeed
 
+        // Keep the character within the screen bounds
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
         characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
 
         updateGameView()
     }
-
 
     private fun handlePowerUps() {
         val currentTime = System.currentTimeMillis()
@@ -193,7 +202,6 @@ object GameController : SensorEventListener {
         updateGameView()
     }
 
-
     fun drawObstacles(canvas: Canvas) {
         obstacles.forEach { it.draw(canvas) }
     }
@@ -218,6 +226,7 @@ object GameController : SensorEventListener {
         uiHandler.post { gameView?.updateView() }
     }
 
+    // Reset all game variables, player position, and state for a fresh start
     fun resetGame() {
         isGameOver = false
         characterX = screenWidth / 2
@@ -227,6 +236,11 @@ object GameController : SensorEventListener {
         score = 0 // ✅ Reset score on restart
         useAccelerometer = false
         playerSpeed = normalSpeed
+        calibrated = false  // Reset calibration state
+        baselineAccelX = 0f // Reset accelerometer baseline
+        baselineAccelY = 0f
+        smoothedHeadX = 0f // Reset smoothed head position
+        smoothedHeadY = 0f
         updateGameView()
     }
 }
