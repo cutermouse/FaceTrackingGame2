@@ -15,7 +15,7 @@ class Obstacle(context: Context, screenWidth: Int) {
     var x: Float = Random.nextInt(50, screenWidth - 50).toFloat() // Random X position
     var y: Float = 0f // Start at the top
     var size: Float = 0f // Initialize size to 0 (will be set in init)
-    var speed: Float = Random.nextInt(10, 25).toFloat() // Falling speed
+    var speed: Float = Random.nextInt(5, 15).toFloat() // Falling speed
     var shape: ShapeType = ShapeType.values().random() // Random shape
 
     private val paint = Paint().apply {
@@ -33,7 +33,7 @@ class Obstacle(context: Context, screenWidth: Int) {
         } else {
             // Randomize size and shape for other obstacles
             shape = ShapeType.values().filter { it != ShapeType.SPEED_UP }.random() // Ensure it's not SPEED_UP
-            size = Random.nextInt(100, 200).toFloat()
+            size = Random.nextInt(100, 150).toFloat()
         }
 
         // Load a unique image based on the shape type

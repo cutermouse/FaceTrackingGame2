@@ -75,7 +75,7 @@ class GameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, at
             val textY = height / 2f
             canvas.drawText(countdownText, textX, textY, countdownPaint)
         } else {
-            val title = if (GameController.useAccelerometer) {
+            val title = if (GameController.useAccelerometerCountdown) {
                 "Tilt your phone!!"
             } else {
                 "Face Tracking!!"

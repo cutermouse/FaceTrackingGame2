@@ -33,6 +33,8 @@ object GameController : SensorEventListener {
     var score = 0 // ✅ Score variable
     var useAccelerometer = false // ✅ Toggle between face tracking & accelerometer
 
+    var useAccelerometerCountdown = false // ✅ Toggle between face tracking & accelerometer
+
     private var sensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
 
@@ -68,8 +70,13 @@ object GameController : SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    private fun startCountdown() {
+    fun startCountdown() {
         countdown = 4 // Start at 4 seconds
+        useAccelerometerCountdown = !useAccelerometerCountdown
+        //useAccelerometer = !useAccelerometer  // ✅ Immediately switch movement mode
+        calibrated = false // ✅ Reset calibration for new movement mode
+        gameView?.updateView() // ✅ Update the UI immediately
+
         val countdownHandler = Handler(Looper.getMainLooper())
 
         fun updateCountdown() {
@@ -78,16 +85,15 @@ object GameController : SensorEventListener {
                 gameView?.updateView() // Update UI
                 countdownHandler.postDelayed({ updateCountdown() }, 1000)
             } else {
-                useAccelerometer = !useAccelerometer
-                gameView?.updateView()
-
                 // Schedule next toggle after 6 seconds (adjust timing if needed)
+                useAccelerometer = !useAccelerometer
                 countdownHandler.postDelayed({ startCountdown() }, 6000)
             }
         }
 
         updateCountdown() // Start countdown loop
     }
+
 
     // ✅ Function to toggle movement method
     private fun toggleMovementMethod() {
@@ -107,10 +113,10 @@ object GameController : SensorEventListener {
         smoothedHeadY = smoothedHeadY * (1 - smoothingFactor) + headY * smoothingFactor
 
         // Move character based on smoothed head position
-        if (smoothedHeadY > 10) characterX -= playerSpeed
-        if (smoothedHeadY < -10) characterX += playerSpeed
-        if (smoothedHeadX > 10) characterY -= playerSpeed
-        if (smoothedHeadX < -10) characterY += playerSpeed
+        if (smoothedHeadY > 10) characterX -= (playerSpeed * 2.0f)
+        if (smoothedHeadY < -10) characterX += (playerSpeed * 2.0f)
+        if (smoothedHeadX > 10) characterY -= (playerSpeed * 2.0f)
+        if (smoothedHeadX < -10) characterY += (playerSpeed * 2.0f)
 
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
         characterY = characterY.coerceIn(playerRadius, screenHeight - playerRadius)
@@ -134,8 +140,8 @@ object GameController : SensorEventListener {
         val adjustedAccelY = accelY - baselineAccelY
 
         // Invert X and Y axes if needed (depending on your device orientation)
-        characterX -= adjustedAccelX * playerSpeed 
-        characterY += adjustedAccelY * playerSpeed
+        characterX -= adjustedAccelX * (playerSpeed / 4.0f)
+        characterY += adjustedAccelY * (playerSpeed / 4.0f)
 
         // Keep the character within the screen bounds
         characterX = characterX.coerceIn(playerRadius, screenWidth - playerRadius)
@@ -235,6 +241,7 @@ object GameController : SensorEventListener {
         frameCount = 0
         score = 0 // ✅ Reset score on restart
         useAccelerometer = false
+        useAccelerometerCountdown = false
         playerSpeed = normalSpeed
         calibrated = false  // Reset calibration state
         baselineAccelX = 0f // Reset accelerometer baseline
